@@ -147,7 +147,32 @@ class Matrix(list):
             return sum(result)
 
     def rref(self):
-        new = []
-        for i, row in enumerate(self.rows):
-            for x, col in enumerate(self.columns):
-                pass
+        new = [*self.rows]
+        newAug = [*self.aug]
+
+        # finds smallest dimension, may make a funtion to do this
+        for size in range(
+            self.rows[0].space
+            if self.rows[0].space < self.columns[0].space
+            else self.columns[0].space
+        ):
+            # the if else is to avoid dividing by zero incase to rows are Identical
+
+            leadingOneFactor = 1 / new[size][size]
+            new[size] = (
+                new[size] * (leadingOneFactor) if leadingOneFactor else new[size]
+            )
+            newAug[size] = (
+                newAug[size] * (leadingOneFactor) if leadingOneFactor else newAug[size]
+            )
+
+            for rowIndex, row in enumerate(new):
+                if rowIndex != size:
+                    zeroingFactor = row[size]
+                    new[rowIndex] = row - (new[size] * zeroingFactor)
+                    newAug[rowIndex] = newAug[rowIndex] - (newAug[size] * zeroingFactor)
+
+        return Matrix(*new, aug=newAug)
+
+
+[[2, 1], [1, 2]]
