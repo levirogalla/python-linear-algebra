@@ -96,15 +96,33 @@ class Matrix(list):
 
     def __mul__(self, other):
         new = []
-        if len(self.rows) == len(other.columns):
-            for row in range(len(self.rows)):
-                new.append(
-                    list(
-                        self.rows[row] * other.columns[col]
-                        for col in range(len(other.columns))
+
+        # vector matrix multipication
+        if isinstance(other, Vector):
+            temp = []
+            try:
+                if other.space != len(self.columns):
+                    raise TypeError("Vector space does not match matrix space")
+                for i, col in enumerate(self.columns):
+                    temp.append(Vector(*col) * other[i])
+                temp = Matrix(*temp).T()
+                for i, row in enumerate(temp):
+                    new.append(sum(row))
+                return Vector(*new)
+            except Exception as e:
+                print(e)
+            
+        # matrix vector multiplication
+        elif isinstance(other, Matrix):
+            if len(self.rows) == len(other.columns):
+                for row in range(len(self.rows)):
+                    new.append(
+                        list(
+                            self.rows[row] * other.columns[col]
+                            for col in range(len(other.columns))
+                        )
                     )
-                )
-        return Matrix(*new)
+            return Matrix(*new)
 
     def cof(self, rowI, colI):
         new = []
@@ -173,6 +191,8 @@ class Matrix(list):
                     newAug[rowIndex] = newAug[rowIndex] - (newAug[size] * zeroingFactor)
 
         return Matrix(*new, aug=newAug)
+    
+    def T(self):
+        rows = self.columns
+        return Matrix(*rows)
 
-
-[[2, 1], [1, 2]]
