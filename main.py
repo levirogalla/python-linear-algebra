@@ -51,20 +51,46 @@ class Vector(list):
 # assumes columns, rows, and aug is all correctly sized
 # can only take vector as aug
 class Matrix(list):
-    def __init__(self, *args, aug=[]):
+    def __init__(self, *args, aug: "Matrix" = None):
         super().__init__(args)
         self.rows = []
         self.columns = []
-        self.aug = Vector(*aug)
-        for row in self:
-            self.rows.append(Vector(*row))
-        for column in range(len(args[0])):
-            self.columns.append(
-                Vector(*(args[row][column] for row in range(len(args))))
-            )
+        self.aug = aug
+        if aug:
+            self.aug = aug
+        if args:
+            for row in self:
+                self.rows.append(Vector(*row))
+            for column in range(len(args[0])):
+                self.columns.append(
+                    Vector(*(args[row][column] for row in range(len(args))))
+                )
+
+    def __getitem__(self, index) -> Vector | float:
+        return self.rows[index]
+
+    def __setitem__(self, index, value) -> None:
+        if isinstance(index, tuple):
+            row, col = index
+            self[row][col] = value
+            self.columns[col][row] = value
+            self.rows[row][col] = value
+        else:
+            super().__setitem__(index, value)
+            self.rows[index] = Vector(*value)
+            if len(self.columns) > 0:
+                for row in range(len(self)):
+                    self.columns[row][index] = self.rows[index][row]
+
+    def __repr__(self):
+        rows = []
+        for row in self.rows:
+            row_str = " ".join([str(elem) for elem in row])
+            rows.append(row_str)
+        return "\n".join(rows)
 
     # __str__ function mainly created by chatgpt
-    def __str__(self):
+    def __str__(self) -> str:
         # Initialize the string that will hold the matrix representation
         matrix_str = "\n"
 
@@ -111,20 +137,15 @@ class Matrix(list):
                 return Vector(*new)
             except Exception as e:
                 print(e)
-            
+
         # matrix vector multiplication
         elif isinstance(other, Matrix):
-            if len(self.rows) == len(other.columns):
-                for row in range(len(self.rows)):
-                    new.append(
-                        list(
-                            self.rows[row] * other.columns[col]
-                            for col in range(len(other.columns))
-                        )
-                    )
-            return Matrix(*new)
+            if len(self.columns) == len(other.rows):
+                for col in other.columns:
+                    new.append(self * col)
+            return Matrix(*new).T()
 
-    def cof(self, rowI, colI):
+    def cof(self, rowI, colI) -> "Matrix":
         new = []
         for i, row in enumerate(self.rows):
             if i != rowI:
@@ -136,7 +157,7 @@ class Matrix(list):
         return Matrix(*new)
 
     # shows all the determinats
-    def detS(self):
+    def detS(self) -> float:
         if len(self.rows) == 2:
             return (self[0][0] * self[1][1]) - (self[1][0] * self[0][1])
         else:
@@ -152,7 +173,7 @@ class Matrix(list):
 
             return sum(result)
 
-    def det(self):
+    def det(self) -> float:
         if len(self.rows) == 2:
             return (self[0][0] * self[1][1]) - (self[1][0] * self[0][1])
         else:
@@ -164,35 +185,120 @@ class Matrix(list):
                 result.append(num * val)
             return sum(result)
 
-    def rref(self):
+    def rref(self) -> "Matrix":
         new = [*self.rows]
-        newAug = [*self.aug]
+        newAug = self.aug
+
+        # case where the matrix is 1x1
+        if len(new) == 1 and len(new[0]) == 1:
+            if new[0][0] != 0:
+                new[0][0] = 1
+            return Matrix(*new)
 
         # finds smallest dimension, may make a funtion to do this
-        for size in range(
+        for rowIndex in range(
             self.rows[0].space
             if self.rows[0].space < self.columns[0].space
             else self.columns[0].space
         ):
-            # the if else is to avoid dividing by zero incase to rows are Identical
+            # rotates rows until the val at nn is not 0 won't rotate rows above n
+            rotations = 0
+            columnNormalizable = True
+            while new[rowIndex][rowIndex] == 0:
+                rotations += 1
 
-            leadingOneFactor = 1 / new[size][size]
-            new[size] = (
-                new[size] * (leadingOneFactor) if leadingOneFactor else new[size]
-            )
-            newAug[size] = (
-                newAug[size] * (leadingOneFactor) if leadingOneFactor else newAug[size]
-            )
+                # apply to matrix
+                lastRow = new.pop(-1)
+                new.insert(rowIndex, lastRow)
 
-            for rowIndex, row in enumerate(new):
-                if rowIndex != size:
-                    zeroingFactor = row[size]
-                    new[rowIndex] = row - (new[size] * zeroingFactor)
-                    newAug[rowIndex] = newAug[rowIndex] - (newAug[size] * zeroingFactor)
+                # apply to augmented matrix if there is one
+                if newAug:
+                    lastRowAug = newAug.pop(-1)
+                    newAug.insert(rowIndex, lastRowAug)
+
+                # breaks out of loop if max rotations have been done
+                if rotations == len(self.rows) - rowIndex:
+                    columnNormalizable = False
+                    break
+
+            # if a column has all 0s it will skip to the next column
+            if columnNormalizable == False:
+                continue
+
+            leadingOneFactor = 1 / new[rowIndex][rowIndex]
+
+            new[rowIndex] = new[rowIndex] * (leadingOneFactor)
+
+            if newAug:
+                newAug[rowIndex] = newAug[rowIndex] * (leadingOneFactor)
+
+            # subtracts row with leading 1 from all other rows to make everything else in the column 0
+            for i, row in enumerate(new):
+                if rowIndex != i:
+                    zeroingFactor = row[rowIndex]
+                    new[i] = row - (new[rowIndex] * zeroingFactor)
+
+                    if newAug:
+                        newAug[i] = newAug[i] - (newAug[rowIndex] * zeroingFactor)
 
         return Matrix(*new, aug=newAug)
-    
+
+    def inverse(self) -> "Matrix":
+        "Returns either the appropriate (left, right, square) inverse or false if matrix is not invertable"
+
+        # checks the matrix is square
+        if len(self.rows) == len(self.columns):
+            # creates identity matrix
+            newAug = Matrix(
+                *[
+                    [1 if col == row else 0 for col in range(len(self.rows))]
+                    for row in range(len(self.rows))
+                ]
+            )
+
+            inverse = Matrix(*self.rows, aug=newAug).rref().aug
+
+            return inverse
+
+        # checks to see if right inverse is appropriate
+        if len(self.rows) < len(self.columns):
+            transpose = self.T()
+
+            # multiply the matrix by its transpose to make it square
+            square = self * transpose
+
+            squareInvers = square.inverse()
+            # reverses the "squaring" action done above
+            inverse = transpose * squareInvers
+
+            return inverse
+
+        # checks to see if left inverse is appropriate
+        if len(self.rows) > len(self.columns):
+            transpose = self.T()
+
+            # multiply the matrix by its transpose to make it square
+            square = transpose * self
+
+            # reverses the "squaring" action done above
+            inverse = square.inverse() * transpose
+
+            return inverse
+
+        return False
+
+    def rank(self) -> int:
+        rref = self.rref()
+        rank = 1
+
+        minSize = min(len(rref.columns), len(rref.rows))
+
+        for val in range(minSize):
+            if val == 1:
+                rank += 1
+
+        return rank
+
     def T(self):
         rows = self.columns
         return Matrix(*rows)
-
