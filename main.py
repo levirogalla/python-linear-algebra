@@ -192,8 +192,9 @@ class Matrix(list):
         # case where the matrix is 1x1
         if len(new) == 1 and len(new[0]) == 1:
             if new[0][0] != 0:
+                newAug[0, 0] = newAug[0][0] / new[0][0]
                 new[0][0] = 1
-            return Matrix(*new)
+            return Matrix(*new, aug=newAug)
 
         # finds smallest dimension, may make a funtion to do this
         for rowIndex in range(
