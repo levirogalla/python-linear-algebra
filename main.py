@@ -1,7 +1,9 @@
-import time
+"""Python lin alg module"""
 
 
 class Vector(list):
+    """Define a vector"""
+
     def __init__(self, *args):
         self.space = len(args)
         super().__init__(args)
@@ -30,13 +32,16 @@ class Vector(list):
     def __abs__(self):
         return pow(sum(tuple(map(lambda x: pow(x, 2), self))), 0.5)
 
-    def projOn(self, direction):
+    def proj_on(self, direction):
+        """Find the projection of one vector onto another."""
         return (direction) * ((self * direction) / pow(abs(direction), 2))
 
-    def perpTo(self, direction):
-        return self - self.projOn(direction)
+    def perp_to(self, direction):
+        """Find the perpendicular of one vector to another."""
+        return self - self.proj_on(direction)
 
-    def crossWith(self, other):
+    def cross_with(self, other):
+        """Get the cross product of two vectors. Both must be in R3"""
         if len(self) == 3 and len(other) == 3:
             return Vector(
                 (self[1] * other[2] - other[1] * self[2]),
@@ -51,6 +56,11 @@ class Vector(list):
 # assumes columns, rows, and aug is all correctly sized
 # can only take vector as aug
 class Matrix(list):
+    """
+    Enter rows, leave out encapsulating square brackets e.g. Matrix([1,1], [1,1]) 
+    not Matrix([[1,1], [1,1]]).
+    """
+
     def __init__(self, *args, aug: "Matrix" = None):
         super().__init__(args)
         self.rows = []
@@ -96,7 +106,8 @@ class Matrix(list):
 
         # Determine the maximum width of each column
         column_widths = [
-            max([len("{:.3f}".format(self.rows[i][j])) for i in range(len(self.rows))])
+            max([len("{:.3f}".format(self.rows[i][j]))
+                for i in range(len(self.rows))])
             for j in range(len(self.rows[0]))
         ]
 
@@ -105,7 +116,8 @@ class Matrix(list):
             # Format each column of the row
             formatted_row = ["|"]
             for j in range(len(row)):
-                formatted_row.append("{:.3f}".format(row[j]).rjust(column_widths[j]))
+                formatted_row.append("{:.3f}".format(
+                    row[j]).rjust(column_widths[j]))
 
             # My additions
             formatted_row.append("|")
@@ -128,15 +140,16 @@ class Matrix(list):
             temp = []
             try:
                 if other.space != len(self.columns):
-                    raise TypeError("Vector space does not match matrix space")
+                    raise ValueError(
+                        "Vector space does not match matrix space")
                 for i, col in enumerate(self.columns):
                     temp.append(Vector(*col) * other[i])
                 temp = Matrix(*temp).T()
                 for i, row in enumerate(temp):
                     new.append(sum(row))
                 return Vector(*new)
-            except Exception as e:
-                print(e)
+            except ValueError as exception:
+                print(exception)
 
         # matrix vector multiplication
         elif isinstance(other, Matrix):
@@ -146,6 +159,7 @@ class Matrix(list):
             return Matrix(*new).T()
 
     def cof(self, rowI, colI) -> "Matrix":
+        """Get co factor matrix."""
         new = []
         for i, row in enumerate(self.rows):
             if i != rowI:
@@ -157,14 +171,15 @@ class Matrix(list):
         return Matrix(*new)
 
     # shows all the determinats
-    def detS(self) -> float:
+    def det_show(self) -> float:
+        "Get determinant. Prints all steps"
         if len(self.rows) == 2:
             return (self[0][0] * self[1][1]) - (self[1][0] * self[0][1])
         else:
             result = []
             for col, num in enumerate(self.rows[0]):
                 print(f"{num} * determinant of: {self.cof(0,col)}")
-                val = self.cof(0, col).detS()
+                val = self.cof(0, col).det_show()
                 if col % 2:
                     val = val * -1
                 print(f"The sum was: {num*val}")
@@ -174,6 +189,7 @@ class Matrix(list):
             return sum(result)
 
     def det(self) -> float:
+        """Gets determinant."""
         if len(self.rows) == 2:
             return (self[0][0] * self[1][1]) - (self[1][0] * self[0][1])
         else:
@@ -186,63 +202,65 @@ class Matrix(list):
             return sum(result)
 
     def rref(self) -> "Matrix":
+        """Gets reduced row echlon form of matrix"""
         new = [*self.rows]
-        newAug = self.aug
+        new_aug = self.aug
 
         # case where the matrix is 1x1
         if len(new) == 1 and len(new[0]) == 1:
             if new[0][0] != 0:
-                newAug[0, 0] = newAug[0][0] / new[0][0]
+                new_aug[0, 0] = new_aug[0][0] / new[0][0]
                 new[0][0] = 1
-            return Matrix(*new, aug=newAug)
+            return Matrix(*new, aug=new_aug)
 
         # finds smallest dimension, may make a funtion to do this
-        for rowIndex in range(
+        for row_index in range(
             self.rows[0].space
             if self.rows[0].space < self.columns[0].space
             else self.columns[0].space
         ):
             # rotates rows until the val at nn is not 0 won't rotate rows above n
             rotations = 0
-            columnNormalizable = True
-            while new[rowIndex][rowIndex] == 0:
+            column_normalizable = True
+            while new[row_index][row_index] == 0:
                 rotations += 1
 
                 # apply to matrix
-                lastRow = new.pop(-1)
-                new.insert(rowIndex, lastRow)
+                last_row = new.pop(-1)
+                new.insert(row_index, last_row)
 
                 # apply to augmented matrix if there is one
-                if newAug:
-                    lastRowAug = newAug.pop(-1)
-                    newAug.insert(rowIndex, lastRowAug)
+                if new_aug:
+                    last_row_aug = new_aug.pop(-1)
+                    new_aug.insert(row_index, last_row_aug)
 
                 # breaks out of loop if max rotations have been done
-                if rotations == len(self.rows) - rowIndex:
-                    columnNormalizable = False
+                if rotations == len(self.rows) - row_index:
+                    column_normalizable = False
                     break
 
             # if a column has all 0s it will skip to the next column
-            if columnNormalizable == False:
+            if column_normalizable == False:
                 continue
 
-            leadingOneFactor = 1 / new[rowIndex][rowIndex]
+            leading_one_factor = 1 / new[row_index][row_index]
 
-            new[rowIndex] = new[rowIndex] * (leadingOneFactor)
+            new[row_index] = new[row_index] * leading_one_factor
 
-            if newAug:
-                newAug[rowIndex] = newAug[rowIndex] * (leadingOneFactor)
+            if new_aug:
+                new_aug[row_index] = new_aug[row_index] * leading_one_factor
 
             # subtracts row with leading 1 from all other rows to make everything else in the column 0
             for i, row in enumerate(new):
-                if rowIndex != i:
-                    zeroingFactor = row[rowIndex]
-                    new[i] = row - (new[rowIndex] * zeroingFactor)
+                if row_index != i:
+                    zeroing_factor = row[row_index]
+                    new[i] = row - (new[row_index] * zeroing_factor)
 
-                    if newAug:
-                        newAug[i] = newAug[i] - (newAug[rowIndex] * zeroingFactor)
+                    if new_aug:
+                        new_aug[i] = new_aug[i] - \
+                            (new_aug[row_index] * zeroing_factor)
 
-        return Matrix(*new, aug=newAug)
+        return Matrix(*new, aug=new_aug)
 
     def inverse(self) -> "Matrix":
         "Returns either the appropriate (left, right, square) inverse or false if matrix is not invertable"
@@ -250,14 +268,14 @@ class Matrix(list):
         # checks the matrix is square
         if len(self.rows) == len(self.columns):
             # creates identity matrix
-            newAug = Matrix(
+            new_aug = Matrix(
                 *[
                     [1 if col == row else 0 for col in range(len(self.rows))]
                     for row in range(len(self.rows))
                 ]
             )
 
-            inverse = Matrix(*self.rows, aug=newAug).rref().aug
+            inverse = Matrix(*self.rows, aug=new_aug).rref().aug
 
             return inverse
 
@@ -268,9 +286,9 @@ class Matrix(list):
             # multiply the matrix by its transpose to make it square
             square = self * transpose
 
-            squareInvers = square.inverse()
+            square_inverse = square.inverse()
             # reverses the "squaring" action done above
-            inverse = transpose * squareInvers
+            inverse = transpose * square_inverse
 
             return inverse
 
@@ -289,17 +307,19 @@ class Matrix(list):
         return False
 
     def rank(self) -> int:
+        """Returns rank of matrix."""
         rref = self.rref()
         rank = 1
 
-        minSize = min(len(rref.columns), len(rref.rows))
+        min_size = min(len(rref.columns), len(rref.rows))
 
-        for val in range(minSize):
+        for val in range(min_size):
             if val == 1:
                 rank += 1
 
         return rank
 
     def T(self):
+        """Get transposed matrix."""
         rows = self.columns
         return Matrix(*rows)

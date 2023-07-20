@@ -6,6 +6,8 @@ To use methods, import either the Matrix or Vector class and define the componen
 
 ## To Do
 
+Create getters and setter for classes.
+
 Add type checks and errors
 
 Add option for percison of values when printing to terminal.
