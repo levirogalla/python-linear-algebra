@@ -99,7 +99,6 @@ class Matrix(list):
             rows.append(row_str)
         return "\n".join(rows)
 
-    # __str__ function mainly created by chatgpt
     def __str__(self) -> str:
         # Initialize the string that will hold the matrix representation
         matrix_str = "\n"
@@ -111,25 +110,49 @@ class Matrix(list):
             for j in range(len(self.rows[0]))
         ]
 
+        if isinstance(self.aug, Vector):
+            aug_width = [
+                max([len("{:.3f}".format(self.aug[i]))
+                    for i in range(len(self.aug))])
+            ]
+
+        if isinstance(self.aug, Matrix):
+            aug_widths = [
+                max([len("{:.3f}".format(self.aug[i][j]))
+                    for i in range(len(self.aug))])
+                for j in range(len(self.aug[0]))
+            ]
+
         # Loop through each row of the matrix
         for i, row in enumerate(self.rows):
             # Format each column of the row
             formatted_row = ["|"]
-            for j in range(len(row)):
+            for j, _ in enumerate(row):
                 formatted_row.append("{:.3f}".format(
                     row[j]).rjust(column_widths[j]))
 
             # My additions
-            formatted_row.append("|")
+            if isinstance(self.aug, Vector):
 
-            if self.aug:
-                formatted_row.append(str(self.aug[i]))
+                formatted_row.append("|")
+                # Right-align the augmented column
+                formatted_row.append("{:.3f}".format(
+                    (self.aug[i])).rjust(max(aug_width)))
+                formatted_row.append("|")
+
+            elif isinstance(self.aug, Matrix):
+                print("here")
+                formatted_row.append("|")
+                for j, _ in enumerate(row):
+                    formatted_row.append("{:.3f}".format(
+                        self.aug[i][j]).rjust(aug_widths[j]))
+                formatted_row.append("|")
+            else:
                 formatted_row.append("|")
 
             # Append the formatted row to the matrix string
             matrix_str += " ".join(formatted_row) + "\n"
 
-        # Return the final matrix string
         return matrix_str
 
     def __mul__(self, other):
@@ -158,14 +181,14 @@ class Matrix(list):
                     new.append(self * col)
             return Matrix(*new).T()
 
-    def cof(self, rowI, colI) -> "Matrix":
+    def cof(self, row_i, col_i) -> "Matrix":
         """Get co factor matrix."""
         new = []
         for i, row in enumerate(self.rows):
-            if i != rowI:
+            if i != row_i:
                 r = []
                 for x, num in enumerate(row):
-                    if x != colI:
+                    if x != col_i:
                         r.append(num)
                 new.append(r)
         return Matrix(*new)
