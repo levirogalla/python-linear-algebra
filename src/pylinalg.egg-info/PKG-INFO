@@ -1,0 +1,11 @@
+Metadata-Version: 2.1
+Name: pylinalg
+Version: 0.1.0
+Summary: python library to preform common linear algebra operations
+Author: Levi Rogalla
+License: MIT
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.9
+License-File: LICENSE

@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+setup.py
+src/pylinalg/__init__.py
+src/pylinalg/linalg.py
+src/pylinalg.egg-info/PKG-INFO
+src/pylinalg.egg-info/SOURCES.txt
+src/pylinalg.egg-info/dependency_links.txt
+src/pylinalg.egg-info/top_level.txt
+test/test_matrix.py
