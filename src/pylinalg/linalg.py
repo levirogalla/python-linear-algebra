@@ -242,7 +242,7 @@ class Matrix(list):
             if self.rows[0].space < self.columns[0].space
             else self.columns[0].space
         ):
-            # rotates rows until the val at nn is not 0 won't rotate rows above n
+            # rotates rows until the val at M(nn) is not 0 won't rotate rows above ROW n
             rotations = 0
             column_normalizable = True
             while new[row_index][row_index] == 0:
@@ -263,7 +263,7 @@ class Matrix(list):
                     break
 
             # if a column has all 0s it will skip to the next column
-            if column_normalizable == False:
+            if not column_normalizable:
                 continue
 
             leading_one_factor = 1 / new[row_index][row_index]
